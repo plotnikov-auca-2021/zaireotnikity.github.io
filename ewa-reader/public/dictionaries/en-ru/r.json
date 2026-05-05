@@ -1,0 +1,4 @@
+{
+  "read": {"source":"read","normalized":"read","language":"en","translationsRu":["читать"],"partOfSpeech":"verb"},
+  "remember": {"source":"remember","normalized":"remember","language":"en","translationsRu":["помнить", "вспоминать"],"partOfSpeech":"verb"}
+}

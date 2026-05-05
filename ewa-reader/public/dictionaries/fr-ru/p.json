@@ -1,0 +1,4 @@
+{
+  "petit": {"source":"petit","normalized":"petit","language":"fr","translationsRu":["маленький"],"partOfSpeech":"adjectif"},
+  "pour": {"source":"pour","normalized":"pour","language":"fr","translationsRu":["для", "чтобы", "за"],"partOfSpeech":"préposition"}
+}

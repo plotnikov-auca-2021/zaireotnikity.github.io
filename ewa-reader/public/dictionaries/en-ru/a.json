@@ -1,0 +1,5 @@
+{
+  "and": {"source":"and","normalized":"and","language":"en","translationsRu":["и", "а"],"partOfSpeech":"conjunction"},
+  "answer": {"source":"answer","normalized":"answer","language":"en","translationsRu":["ответ", "отвечать"],"partOfSpeech":"noun / verb"},
+  "ask": {"source":"ask","normalized":"ask","language":"en","translationsRu":["спрашивать", "просить"],"partOfSpeech":"verb"}
+}

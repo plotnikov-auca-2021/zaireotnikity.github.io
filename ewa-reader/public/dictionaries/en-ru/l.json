@@ -1,0 +1,4 @@
+{
+  "learn": {"source":"learn","normalized":"learn","language":"en","translationsRu":["учить", "узнавать"],"partOfSpeech":"verb"},
+  "love": {"source":"love","normalized":"love","language":"en","translationsRu":["любовь", "любить"],"partOfSpeech":"noun / verb"}
+}

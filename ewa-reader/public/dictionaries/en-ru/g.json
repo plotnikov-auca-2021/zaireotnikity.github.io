@@ -1,0 +1,4 @@
+{
+  "go": {"source":"go","normalized":"go","language":"en","translationsRu":["идти", "ехать"],"partOfSpeech":"verb"},
+  "good": {"source":"good","normalized":"good","language":"en","translationsRu":["хороший", "добрый"],"partOfSpeech":"adjective"}
+}

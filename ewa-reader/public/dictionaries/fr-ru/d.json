@@ -1,0 +1,5 @@
+{
+  "dans": {"source":"dans","normalized":"dans","language":"fr","translationsRu":["в", "через"],"partOfSpeech":"préposition"},
+  "de": {"source":"de","normalized":"de","language":"fr","translationsRu":["из", "от", "о"],"partOfSpeech":"préposition"},
+  "devenir": {"source":"devenir","normalized":"devenir","language":"fr","translationsRu":["становиться"],"partOfSpeech":"verbe"}
+}

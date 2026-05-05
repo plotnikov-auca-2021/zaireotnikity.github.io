@@ -1,0 +1,4 @@
+{
+  "renard": {"source":"renard","normalized":"renard","language":"fr","translationsRu":["лиса", "лис"],"partOfSpeech":"nom"},
+  "responsable": {"source":"responsable","normalized":"responsable","language":"fr","translationsRu":["ответственный"],"partOfSpeech":"adjectif"}
+}

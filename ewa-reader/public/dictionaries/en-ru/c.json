@@ -1,0 +1,4 @@
+{
+  "come": {"source":"come","normalized":"come","language":"en","translationsRu":["приходить", "приезжать"],"partOfSpeech":"verb"},
+  "child": {"source":"child","normalized":"child","language":"en","translationsRu":["ребёнок"],"partOfSpeech":"noun"}
+}

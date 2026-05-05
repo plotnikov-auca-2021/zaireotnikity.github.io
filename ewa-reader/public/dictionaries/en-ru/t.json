@@ -1,0 +1,5 @@
+{
+  "the": {"source":"the","normalized":"the","language":"en","translationsRu":["определённый артикль"],"partOfSpeech":"article"},
+  "this": {"source":"this","normalized":"this","language":"en","translationsRu":["этот", "это"],"partOfSpeech":"pronoun"},
+  "time": {"source":"time","normalized":"time","language":"en","translationsRu":["время", "раз"],"partOfSpeech":"noun"}
+}

@@ -1,0 +1,5 @@
+{
+  "beautiful": {"source":"beautiful","normalized":"beautiful","language":"en","translationsRu":["красивый", "прекрасный"],"partOfSpeech":"adjective"},
+  "book": {"source":"book","normalized":"book","language":"en","translationsRu":["книга", "заказывать"],"partOfSpeech":"noun / verb"},
+  "boy": {"source":"boy","normalized":"boy","language":"en","translationsRu":["мальчик"],"partOfSpeech":"noun"}
+}

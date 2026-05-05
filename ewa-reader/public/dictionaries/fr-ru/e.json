@@ -1,0 +1,4 @@
+{
+  "et": {"source":"et","normalized":"et","language":"fr","translationsRu":["и"],"partOfSpeech":"conjonction"},
+  "être": {"source":"être","normalized":"etre","language":"fr","translationsRu":["быть"],"partOfSpeech":"verbe"}
+}

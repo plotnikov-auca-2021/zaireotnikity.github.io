@@ -1,0 +1,4 @@
+{
+  "word": {"source":"word","normalized":"word","language":"en","translationsRu":["слово"],"partOfSpeech":"noun"},
+  "world": {"source":"world","normalized":"world","language":"en","translationsRu":["мир"],"partOfSpeech":"noun"}
+}

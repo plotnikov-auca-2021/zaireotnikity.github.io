@@ -1,0 +1,4 @@
+{
+  "maison": {"source":"maison","normalized":"maison","language":"fr","translationsRu":["дом"],"partOfSpeech":"nom"},
+  "mot": {"source":"mot","normalized":"mot","language":"fr","translationsRu":["слово"],"partOfSpeech":"nom"}
+}

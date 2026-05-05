@@ -1,0 +1,5 @@
+{
+  "have": {"source":"have","normalized":"have","language":"en","translationsRu":["иметь", "обладать"],"partOfSpeech":"verb"},
+  "hello": {"source":"hello","normalized":"hello","language":"en","translationsRu":["привет", "здравствуйте"],"partOfSpeech":"interjection"},
+  "home": {"source":"home","normalized":"home","language":"en","translationsRu":["дом", "домой"],"partOfSpeech":"noun / adverb"}
+}

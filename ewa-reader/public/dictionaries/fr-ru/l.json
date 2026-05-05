@@ -1,0 +1,5 @@
+{
+  "le": {"source":"le","normalized":"le","language":"fr","translationsRu":["определённый артикль мужского рода"],"partOfSpeech":"article"},
+  "la": {"source":"la","normalized":"la","language":"fr","translationsRu":["определённый артикль женского рода"],"partOfSpeech":"article"},
+  "livre": {"source":"livre","normalized":"livre","language":"fr","translationsRu":["книга"],"partOfSpeech":"nom"}
+}

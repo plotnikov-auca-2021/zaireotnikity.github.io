@@ -1,0 +1,6 @@
+{
+  "language": "fr",
+  "target": "ru",
+  "description": "Small starter French-Russian offline dictionary. Extend with larger open data later.",
+  "chunks": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]
+}

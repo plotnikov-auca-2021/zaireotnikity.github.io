@@ -1,0 +1,5 @@
+{
+  "beau": {"source":"beau","normalized":"beau","language":"fr","translationsRu":["красивый", "прекрасный"],"partOfSpeech":"adjectif"},
+  "beaucoup": {"source":"beaucoup","normalized":"beaucoup","language":"fr","translationsRu":["много", "очень"],"partOfSpeech":"adverbe"},
+  "bonjour": {"source":"bonjour","normalized":"bonjour","language":"fr","translationsRu":["здравствуйте", "добрый день"],"partOfSpeech":"interjection"}
+}

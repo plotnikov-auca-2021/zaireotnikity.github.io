@@ -1,0 +1,5 @@
+{
+  "aller": {"source":"aller","normalized":"aller","language":"fr","translationsRu":["идти", "ехать"],"partOfSpeech":"verbe"},
+  "ami": {"source":"ami","normalized":"ami","language":"fr","translationsRu":["друг"],"partOfSpeech":"nom"},
+  "amour": {"source":"amour","normalized":"amour","language":"fr","translationsRu":["любовь"],"partOfSpeech":"nom"}
+}

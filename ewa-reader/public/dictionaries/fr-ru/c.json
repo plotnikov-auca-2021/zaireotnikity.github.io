@@ -1,0 +1,5 @@
+{
+  "ce": {"source":"ce","normalized":"ce","language":"fr","translationsRu":["этот", "это"],"partOfSpeech":"déterminant / pronom"},
+  "chose": {"source":"chose","normalized":"chose","language":"fr","translationsRu":["вещь", "дело"],"partOfSpeech":"nom"},
+  "comprendre": {"source":"comprendre","normalized":"comprendre","language":"fr","translationsRu":["понимать"],"partOfSpeech":"verbe"}
+}
