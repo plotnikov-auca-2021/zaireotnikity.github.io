@@ -121,7 +121,7 @@ export function App() {
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => undefined);
+      navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => undefined);
     }
   }, []);
 
@@ -949,7 +949,7 @@ function DictionarySettingsPanel({
 
       <div className="action-row">
         <Button variant="primary" onClick={() => fileRef.current?.click()}>{t('importDictionary')}</Button>
-        <a className="dictionary-link" href="/dictionaries/README.txt" target="_blank" rel="noreferrer">{t('dictionaryFormatHelp')}</a>
+        <a className="dictionary-link" href={`${import.meta.env.BASE_URL}dictionaries/README.txt`} target="_blank" rel="noreferrer">{t('dictionaryFormatHelp')}</a>
       </div>
       <input ref={fileRef} className="hidden" type="file" accept=".json,.csv,.tsv,.dsl,text/plain,application/json" onChange={handleFile} />
 

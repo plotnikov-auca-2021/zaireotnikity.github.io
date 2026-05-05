@@ -1,5 +1,9 @@
-const CACHE_NAME = 'ewa-reader-shell-v1';
-const SHELL_URLS = ['/', '/manifest.webmanifest'];
+const CACHE_NAME = 'ewa-reader-shell-v2';
+const SCOPE_URL = new URL(self.registration.scope);
+const SHELL_URLS = [
+  new URL('./', SCOPE_URL).toString(),
+  new URL('manifest.webmanifest', SCOPE_URL).toString()
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_URLS)));
@@ -23,7 +27,7 @@ self.addEventListener('fetch', (event) => {
         const clone = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         return response;
-      }).catch(() => caches.match('/'));
+      }).catch(() => caches.match(new URL('./', SCOPE_URL).toString()));
     })
   );
 });

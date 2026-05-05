@@ -187,3 +187,24 @@ Suggested legal/open sources:
 - Wiktionary-derived data through Kaikki/Wiktextract, if you convert it into JSON/CSV.
 
 Do not extract dictionaries from APK/iOS apps unless the dictionary data is licensed for reuse.
+
+
+## GitHub Pages deployment
+
+This version is ready for GitHub Pages. It includes:
+
+- `base: './'` in `vite.config.ts`, so the app works from a repository URL such as `https://YOUR_USERNAME.github.io/YOUR_REPOSITORY/`.
+- `.github/workflows/deploy.yml`, which builds the app and publishes `dist/` to GitHub Pages.
+- relative manifest, icon, dictionary and service worker paths.
+- a GitHub Pages workflow that installs dependencies, builds the Vite app, and deploys `dist/`.
+
+### Steps
+
+1. Upload or push this project folder to your GitHub repository.
+2. In GitHub, open **Settings → Pages**.
+3. Under **Build and deployment**, choose **GitHub Actions**.
+4. Push to the `main` branch. The workflow uses `npm install`, so `package-lock.json` is intentionally not included in this ZIP.
+5. Wait for the **Deploy to GitHub Pages** action to finish.
+6. Open the Pages URL on iPhone Safari and use **Share → Add to Home Screen**.
+
+Do not commit API keys. The app stores provider keys locally in the user's browser settings.

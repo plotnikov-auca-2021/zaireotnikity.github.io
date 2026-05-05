@@ -21,7 +21,7 @@ async function loadDictionaryChunk(language: SourceLanguage, chunkName: string):
   if (chunkCache.has(cacheKey)) return chunkCache.get(cacheKey)!;
 
   try {
-    const response = await fetch(`/dictionaries/${language}-ru/${chunkName}.json`);
+    const response = await fetch(`${import.meta.env.BASE_URL}dictionaries/${language}-ru/${chunkName}.json`);
     if (!response.ok) throw new Error('Dictionary chunk not found');
     const data = await response.json();
     chunkCache.set(cacheKey, data);
