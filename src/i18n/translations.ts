@@ -105,7 +105,16 @@ export const translations: Record<UiLanguage, Record<string, string>> = {
     explainShort: 'Объяснить',
     grammarShort: 'Грамм.',
     simplifyShort: 'Упростить',
-    quizShort: 'Тест'
+    quizShort: 'Тест',
+    aiDictionaryCollecting: 'Ищу незнакомые слова',
+    aiDictionaryProgress: 'AI-словарь: обрабатываю слов',
+    aiDictionarySaved: 'AI-словарь: сохранено слов',
+    aiDictionaryFailed: 'AI-словарь: не удалось обработать страницу',
+    aiDictionaryEntries: 'AI-словарь',
+    lemma: 'Начальная форма',
+    partOfSpeech: 'Часть речи',
+    grammarNote: 'Грамматика',
+    aiDictionaryEntry: 'Найдено через AI и сохранено для офлайн-доступа.'
   },
   en: {
     appTitle: 'Reader',
@@ -211,7 +220,16 @@ export const translations: Record<UiLanguage, Record<string, string>> = {
     explainShort: 'Explain',
     grammarShort: 'Grammar',
     simplifyShort: 'Simplify',
-    quizShort: 'Quiz'
+    quizShort: 'Quiz',
+    aiDictionaryCollecting: 'Finding unknown words',
+    aiDictionaryProgress: 'AI dictionary: processing words',
+    aiDictionarySaved: 'AI dictionary: saved words',
+    aiDictionaryFailed: 'AI dictionary: could not process page',
+    aiDictionaryEntries: 'AI dictionary',
+    lemma: 'Dictionary form',
+    partOfSpeech: 'Part of speech',
+    grammarNote: 'Grammar',
+    aiDictionaryEntry: 'Found with AI and saved for offline use.'
   },
   fr: {
     appTitle: 'Lecteur',
@@ -317,7 +335,16 @@ export const translations: Record<UiLanguage, Record<string, string>> = {
     explainShort: 'Expliquer',
     grammarShort: 'Gramm.',
     simplifyShort: 'Simplifier',
-    quizShort: 'Quiz'
+    quizShort: 'Quiz',
+    aiDictionaryCollecting: 'Recherche des mots inconnus',
+    aiDictionaryProgress: 'Dictionnaire AI : mots en traitement',
+    aiDictionarySaved: 'Dictionnaire AI : mots enregistrés',
+    aiDictionaryFailed: 'Dictionnaire AI : impossible de traiter la page',
+    aiDictionaryEntries: 'Dictionnaire AI',
+    lemma: 'Forme de base',
+    partOfSpeech: 'Partie du discours',
+    grammarNote: 'Grammaire',
+    aiDictionaryEntry: 'Trouvé avec AI et enregistré pour une utilisation hors ligne.'
   }
 };
 

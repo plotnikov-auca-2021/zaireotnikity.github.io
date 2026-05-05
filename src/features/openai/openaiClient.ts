@@ -1,6 +1,7 @@
-import type { AiExplanationRecord, AiProvider, PageTextRecord, SourceLanguage } from '../../types';
-import { getByKey, put } from '../../storage/db';
-import { nowIso, simpleHash, splitIntoSentences } from '../../utils/text';
+import type { AiExplanationRecord, AiProvider, DictionaryEntryRecord, DictionarySourceRecord, PageTextRecord, SourceLanguage } from '../../types';
+import { getByKey, importDictionarySource, put } from '../../storage/db';
+import { lookupOfflineDictionary } from '../dictionary/dictionaryService';
+import { displayCleanWord, nowIso, normalizeWord, simpleHash, splitIntoSentences, splitSentenceIntoParts } from '../../utils/text';
 
 export interface AiRequestParams {
   provider: AiProvider;
@@ -19,9 +20,28 @@ export interface PretranslateBookParams {
   apiKey: string;
   model: string;
   bookId: string;
+  bookTitle?: string;
   sourceLanguage: SourceLanguage;
   pages: PageTextRecord[];
-  onProgress?: (progress: { pageNumber: number; pageCount: number; translated: number; total: number }) => void;
+  onProgress?: (progress: {
+    pageNumber: number;
+    pageCount: number;
+    translated: number;
+    total: number;
+    wordStage?: 'idle' | 'collecting' | 'ai' | 'saved' | 'failed';
+    unknownWords?: number;
+    savedWords?: number;
+  }) => void;
+}
+
+interface AiWordEntry {
+  word: string;
+  lemma?: string;
+  translationRu?: string;
+  translationsRu?: string[];
+  grammar?: string;
+  grammarRu?: string;
+  partOfSpeech?: string;
 }
 
 export async function getAiExplanation(params: AiRequestParams): Promise<{ text: string; cached: boolean }> {
@@ -50,7 +70,7 @@ export async function getCachedSentenceTranslation(bookId: string, sourceLanguag
   return cached?.responseRu || null;
 }
 
-export async function pretranslateBook(params: PretranslateBookParams): Promise<{ translated: number; total: number }> {
+export async function pretranslateBook(params: PretranslateBookParams): Promise<{ translated: number; total: number; aiDictionaryEntries: number }> {
   if (!params.apiKey.trim()) throw new Error(`Missing ${providerName(params.provider)} API key`);
 
   const pageSentences = params.pages.map((page) => ({
@@ -59,6 +79,7 @@ export async function pretranslateBook(params: PretranslateBookParams): Promise<
   }));
   const total = pageSentences.reduce((sum, item) => sum + item.sentences.length, 0);
   let translated = 0;
+  let aiDictionaryEntries = 0;
 
   for (const item of pageSentences) {
     const missing: string[] = [];
@@ -86,10 +107,33 @@ export async function pretranslateBook(params: PretranslateBookParams): Promise<
       params.onProgress?.({ pageNumber: item.page.pageNumber, pageCount: params.pages.length, translated, total });
     }
 
+    params.onProgress?.({ pageNumber: item.page.pageNumber, pageCount: params.pages.length, translated, total, wordStage: 'collecting' });
+    try {
+      const savedForPage = await enrichUnknownWordsForPage(params, item.page, item.sentences);
+      aiDictionaryEntries += savedForPage;
+      params.onProgress?.({
+        pageNumber: item.page.pageNumber,
+        pageCount: params.pages.length,
+        translated,
+        total,
+        wordStage: 'saved',
+        savedWords: savedForPage
+      });
+    } catch {
+      // Word enrichment should not prevent the translated book from being usable.
+      params.onProgress?.({
+        pageNumber: item.page.pageNumber,
+        pageCount: params.pages.length,
+        translated,
+        total,
+        wordStage: 'failed'
+      });
+    }
+
     params.onProgress?.({ pageNumber: item.page.pageNumber, pageCount: params.pages.length, translated, total });
   }
 
-  return { translated, total };
+  return { translated, total, aiDictionaryEntries };
 }
 
 export async function checkAiApi(provider: AiProvider, apiKey: string, model: string): Promise<boolean> {
@@ -120,6 +164,10 @@ function languageName(language: SourceLanguage): string {
   return language === 'fr' ? 'французского' : 'английского';
 }
 
+function sourceLanguageLabel(language: SourceLanguage): string {
+  return language === 'fr' ? 'French' : 'English';
+}
+
 function buildPrompt(params: AiRequestParams): string {
   const lang = languageName(params.sourceLanguage);
   const context = params.context ? `\nКонтекст: ${params.context}` : '';
@@ -144,6 +192,179 @@ async function translateSentenceBatch(params: PretranslateBookParams & { sentenc
 
   const raw = await callSelectedProvider(params.provider, params.apiKey, params.model, prompt);
   return parseTranslationArray(raw, params.sentences.length);
+}
+
+async function enrichUnknownWordsForPage(params: PretranslateBookParams, page: PageTextRecord, sentences: string[]): Promise<number> {
+  const unknownWords = await collectUnknownWords(sentences, params.sourceLanguage);
+  if (!unknownWords.length) return 0;
+
+  params.onProgress?.({
+    pageNumber: page.pageNumber,
+    pageCount: params.pages.length,
+    translated: 0,
+    total: 0,
+    wordStage: 'ai',
+    unknownWords: unknownWords.length
+  });
+
+  const entries: AiWordEntry[] = [];
+  for (const chunk of chunkWords(unknownWords)) {
+    const raw = await callSelectedProvider(
+      params.provider,
+      params.apiKey,
+      params.model,
+      buildUnknownWordsPrompt(params.sourceLanguage, chunk, sentences)
+    );
+    entries.push(...parseAiWordEntries(raw));
+  }
+
+  const dictionaryEntries = buildAiDictionaryEntries({
+    provider: params.provider,
+    bookId: params.bookId,
+    bookTitle: params.bookTitle,
+    sourceLanguage: params.sourceLanguage,
+    aiEntries: entries,
+    fallbackWords: unknownWords
+  });
+
+  if (!dictionaryEntries.length) return 0;
+
+  const source: DictionarySourceRecord = {
+    id: buildAiDictionarySourceId(params.bookId, params.sourceLanguage),
+    name: `AI dictionary · ${params.bookTitle || params.bookId}`,
+    language: params.sourceLanguage,
+    format: 'json',
+    entryCount: dictionaryEntries.length,
+    createdAt: nowIso()
+  };
+
+  await importDictionarySource(source, dictionaryEntries);
+  return dictionaryEntries.length;
+}
+
+async function collectUnknownWords(sentences: string[], language: SourceLanguage): Promise<string[]> {
+  const unique = new Map<string, string>();
+
+  for (const sentence of sentences) {
+    for (const part of splitSentenceIntoParts(sentence)) {
+      if (part.type !== 'word') continue;
+      const clean = displayCleanWord(part.value);
+      const normalized = normalizeWord(clean);
+      if (!shouldCheckWord(normalized)) continue;
+      if (!unique.has(normalized)) unique.set(normalized, clean);
+    }
+  }
+
+  const unknown: string[] = [];
+  for (const [normalized, original] of unique) {
+    const existing = await lookupOfflineDictionary(original, language);
+    if (!existing) unknown.push(original);
+  }
+
+  return unknown.slice(0, 80);
+}
+
+function shouldCheckWord(normalized: string): boolean {
+  if (!normalized || normalized.length < 2) return false;
+  if (/^\d+$/.test(normalized)) return false;
+  if (/^[ivxlcdm]+$/i.test(normalized)) return false;
+  return true;
+}
+
+function buildUnknownWordsPrompt(language: SourceLanguage, words: string[], sentences: string[]): string {
+  return [
+    `You are helping a Russian-speaking learner read a ${sourceLanguageLabel(language)} book.`,
+    'For each unknown word or inflected form, identify the dictionary form and the most likely Russian meaning in context.',
+    'Return ONLY a valid JSON array. No Markdown. No comments outside JSON.',
+    'Each item must have this shape:',
+    '[{"word":"original form","lemma":"dictionary form","translationRu":"short Russian translation","grammar":"short grammar note in Russian","partOfSpeech":"noun/verb/adjective/etc. in Russian"}]',
+    'If a word is a contraction or elision, keep the original in "word" and explain the useful dictionary form in "lemma".',
+    `Unknown words: ${JSON.stringify(words)}`,
+    `Page context: ${JSON.stringify(sentences.slice(0, 18))}`
+  ].join('\n');
+}
+
+function parseAiWordEntries(raw: string): AiWordEntry[] {
+  const jsonCandidate = extractJsonArray(raw.trim());
+  if (!jsonCandidate) return [];
+  try {
+    const parsed = JSON.parse(jsonCandidate);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((item) => ({
+        word: String(item?.word || '').trim(),
+        lemma: String(item?.lemma || '').trim(),
+        translationRu: String(item?.translationRu || item?.translation || '').trim(),
+        translationsRu: Array.isArray(item?.translationsRu) ? item.translationsRu.map((v: unknown) => String(v).trim()).filter(Boolean) : undefined,
+        grammar: String(item?.grammar || item?.grammarRu || '').trim(),
+        grammarRu: String(item?.grammarRu || item?.grammar || '').trim(),
+        partOfSpeech: String(item?.partOfSpeech || '').trim()
+      }))
+      .filter((entry) => entry.word && (entry.translationRu || entry.translationsRu?.length));
+  } catch {
+    return [];
+  }
+}
+
+function buildAiDictionaryEntries({
+  provider,
+  bookId,
+  bookTitle,
+  sourceLanguage,
+  aiEntries,
+  fallbackWords
+}: {
+  provider: AiProvider;
+  bookId: string;
+  bookTitle?: string;
+  sourceLanguage: SourceLanguage;
+  aiEntries: AiWordEntry[];
+  fallbackWords: string[];
+}): DictionaryEntryRecord[] {
+  const fallbackByNorm = new Map(fallbackWords.map((word) => [normalizeWord(word), word]));
+  const sourceId = buildAiDictionarySourceId(bookId, sourceLanguage);
+  const now = nowIso();
+  const result: DictionaryEntryRecord[] = [];
+  const seen = new Set<string>();
+
+  for (const aiEntry of aiEntries) {
+    const original = aiEntry.word || fallbackByNorm.get(normalizeWord(aiEntry.lemma || '')) || '';
+    const normalized = normalizeWord(original);
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+
+    const translationsRu = aiEntry.translationsRu?.length
+      ? aiEntry.translationsRu
+      : String(aiEntry.translationRu || '')
+          .split(/[;,]/)
+          .map((item) => item.trim())
+          .filter(Boolean);
+
+    if (!translationsRu.length) continue;
+
+    result.push({
+      id: `dict_${simpleHash([sourceId, normalized].join('|'))}`,
+      lookupKey: `${sourceLanguage}:${normalized}`,
+      sourceId,
+      sourceName: `AI dictionary · ${bookTitle || bookId}`,
+      importedAt: now,
+      source: original,
+      normalized,
+      language: sourceLanguage,
+      translationsRu,
+      partOfSpeech: aiEntry.partOfSpeech || undefined,
+      lemma: aiEntry.lemma || undefined,
+      grammarRu: aiEntry.grammarRu || aiEntry.grammar || undefined,
+      generatedByAi: true,
+      aiProvider: provider
+    });
+  }
+
+  return result;
+}
+
+function buildAiDictionarySourceId(bookId: string, sourceLanguage: SourceLanguage): string {
+  return `ai-dictionary-${sourceLanguage}-${bookId}`;
 }
 
 function parseTranslationArray(raw: string, expectedCount: number): string[] {
@@ -202,6 +423,12 @@ function chunkSentences(sentences: string[]): string[][] {
   }
 
   if (current.length) chunks.push(current);
+  return chunks;
+}
+
+function chunkWords(words: string[]): string[][] {
+  const chunks: string[][] = [];
+  for (let i = 0; i < words.length; i += 30) chunks.push(words.slice(i, i + 30));
   return chunks;
 }
 

@@ -46,6 +46,10 @@ export interface DictionaryEntry {
   partOfSpeech?: string;
   examples?: string[];
   frequency?: number;
+  lemma?: string;
+  grammarRu?: string;
+  generatedByAi?: boolean;
+  aiProvider?: AiProvider;
 }
 
 export interface DictionarySourceRecord {

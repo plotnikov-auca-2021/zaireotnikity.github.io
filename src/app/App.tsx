@@ -169,13 +169,25 @@ export function App() {
         model,
         bookId: book.id,
         sourceLanguage: book.sourceLanguage,
+        bookTitle: book.title,
         pages: extractedPages,
         onProgress: (progress) => {
-          setBusy(`${t('bookTranslationProgress')} ${progress.translated}/${progress.total} · ${t('page')} ${progress.pageNumber}/${progress.pageCount}`);
+          if (progress.wordStage === 'collecting') {
+            setBusy(`${t('aiDictionaryCollecting')} · ${t('page')} ${progress.pageNumber}/${progress.pageCount}`);
+          } else if (progress.wordStage === 'ai') {
+            setBusy(`${t('aiDictionaryProgress')} ${progress.unknownWords || 0} · ${t('page')} ${progress.pageNumber}/${progress.pageCount}`);
+          } else if (progress.wordStage === 'saved') {
+            setBusy(`${t('aiDictionarySaved')} ${progress.savedWords || 0} · ${t('page')} ${progress.pageNumber}/${progress.pageCount}`);
+          } else if (progress.wordStage === 'failed') {
+            setBusy(`${t('aiDictionaryFailed')} · ${t('page')} ${progress.pageNumber}/${progress.pageCount}`);
+          } else {
+            setBusy(`${t('bookTranslationProgress')} ${progress.translated}/${progress.total} · ${t('page')} ${progress.pageNumber}/${progress.pageCount}`);
+          }
         }
       });
+      setDictionarySources(await getDictionarySources());
       await refreshSentenceTranslations(book.id);
-      setMessage(`${t('bookTranslationDone')} ${result.translated}/${result.total}`);
+      setMessage(`${t('bookTranslationDone')} ${result.translated}/${result.total} · ${t('aiDictionaryEntries')}: ${result.aiDictionaryEntries}`);
     } catch (error) {
       setMessage(`${t('bookTranslationFailed')}: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
@@ -245,7 +257,7 @@ export function App() {
       bookId: activeBook.id,
       sourceLanguage: activeBook.sourceLanguage,
       word: selectedWord.word,
-      lemma: selectedWord.dictionaryEntry?.normalized,
+      lemma: selectedWord.dictionaryEntry?.lemma || selectedWord.dictionaryEntry?.normalized,
       translationRu: translation,
       exampleSentence: selectedWord.sentence,
       status: 'new',
@@ -483,7 +495,10 @@ export function App() {
             <div className="stack">
               <p className="eyebrow">{t('offlineTranslation')}</p>
               <h3>{selectedWord.dictionaryEntry.translationsRu.join(', ')}</h3>
-              {selectedWord.dictionaryEntry.partOfSpeech && <p>{selectedWord.dictionaryEntry.partOfSpeech}</p>}
+              {selectedWord.dictionaryEntry.lemma && <p><strong>{t('lemma')}:</strong> {selectedWord.dictionaryEntry.lemma}</p>}
+              {selectedWord.dictionaryEntry.partOfSpeech && <p><strong>{t('partOfSpeech')}:</strong> {selectedWord.dictionaryEntry.partOfSpeech}</p>}
+              {selectedWord.dictionaryEntry.grammarRu && <p><strong>{t('grammarNote')}:</strong> {selectedWord.dictionaryEntry.grammarRu}</p>}
+              {selectedWord.dictionaryEntry.generatedByAi && <p className="muted">{t('aiDictionaryEntry')}</p>}
               <p className="quote">{selectedWord.sentence}</p>
             </div>
           ) : (
