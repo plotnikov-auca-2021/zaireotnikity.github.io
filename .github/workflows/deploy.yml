@@ -26,10 +26,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          registry-url: https://registry.npmjs.org
 
+      - name: Show Node and npm versions
+        run: |
+          node --version
+          npm --version
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm install --no-package-lock --no-audit --no-fund --registry=https://registry.npmjs.org
 
       - name: Build
         run: npm run build

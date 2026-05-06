@@ -52,3 +52,9 @@ AI-generated dictionary entries are now stored in one shared local dictionary pe
 - `AI learned dictionary · English → Russian`
 
 When a later book contains a word form already learned from an earlier book, the app finds it locally and skips a new AI lookup. Existing old book-specific AI dictionaries are migrated into the new global learned dictionary on app startup.
+
+## GitHub Actions build note
+
+This package intentionally does not include `package-lock.json`. The deployment workflow installs dependencies from the public npm registry with `--no-package-lock` so GitHub Actions does not try to use a local or private registry URL from another machine.
+
+If deployment fails at `npm install`, check that `.npmrc` is present and that no `package-lock.json` was committed.
