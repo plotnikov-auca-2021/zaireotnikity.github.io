@@ -11,6 +11,7 @@ import { extractPdfBook } from '../features/pdf/pdfService';
 import { makeTranslator } from '../i18n/translations';
 import {
   AI_PROVIDERS,
+  consolidateLegacyAiDictionaries,
   DEFAULT_AI_MODELS,
   DEFAULT_SETTINGS,
   deleteBookCascade,
@@ -95,6 +96,7 @@ export function App() {
   }, []);
 
   const loadInitial = useCallback(async () => {
+    await consolidateLegacyAiDictionaries();
     const savedSettings = await getSettings();
     setSettings(savedSettings);
 

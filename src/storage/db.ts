@@ -33,6 +33,14 @@ export const DEFAULT_SETTINGS: AppSettings = {
   hasRequestedPersistentStorage: false
 };
 
+export function getGlobalAiDictionarySourceId(language: SourceLanguage): string {
+  return `ai-dictionary-global-${language}`;
+}
+
+export function getGlobalAiDictionarySourceName(language: SourceLanguage): string {
+  return language === 'fr' ? 'AI learned dictionary · French → Russian' : 'AI learned dictionary · English → Russian';
+}
+
 type StoreName = 'books' | 'pages' | 'progress' | 'vocabulary' | 'aiCache' | 'settings' | 'dictionarySources' | 'dictionaryEntries';
 
 type StoreValueMap = {
@@ -200,6 +208,77 @@ export async function importDictionarySource(source: DictionarySourceRecord, ent
     tx.onerror = () => reject(tx.error);
     tx.oncomplete = () => resolve();
   });
+}
+
+export async function upsertDictionaryEntriesIntoSource(source: DictionarySourceRecord, entries: DictionaryEntryRecord[]): Promise<number> {
+  const db = await openDatabase();
+  return new Promise<number>((resolve, reject) => {
+    const tx = db.transaction(['dictionarySources', 'dictionaryEntries'], 'readwrite');
+    const sourcesStore = tx.objectStore('dictionarySources');
+    const entriesStore = tx.objectStore('dictionaryEntries');
+    const sourceIdIndex = entriesStore.index('sourceId');
+    sourcesStore.put(source);
+    for (const entry of entries) entriesStore.put(entry);
+
+    let count = source.entryCount;
+    const countRequest = sourceIdIndex.count(IDBKeyRange.only(source.id));
+    countRequest.onsuccess = () => {
+      count = countRequest.result;
+      sourcesStore.put({ ...source, entryCount: count });
+    };
+    countRequest.onerror = () => reject(countRequest.error);
+    tx.onerror = () => reject(tx.error);
+    tx.oncomplete = () => resolve(count);
+  });
+}
+
+export async function consolidateLegacyAiDictionaries(): Promise<void> {
+  const sources = await getDictionarySources();
+  const legacySources = sources.filter((source) =>
+    source.id.startsWith('ai-dictionary-') && !source.id.startsWith('ai-dictionary-global-')
+  );
+  if (!legacySources.length) return;
+
+  const allEntries = await getAll('dictionaryEntries');
+
+  for (const language of ['fr', 'en'] as SourceLanguage[]) {
+    const sourceIds = new Set(legacySources.filter((source) => source.language === language).map((source) => source.id));
+    if (!sourceIds.size) continue;
+
+    const globalSourceId = getGlobalAiDictionarySourceId(language);
+    const globalSourceName = getGlobalAiDictionarySourceName(language);
+    const migratedEntries = allEntries
+      .filter((entry) => sourceIds.has(entry.sourceId))
+      .map((entry) => ({
+        ...entry,
+        id: `dict_global_ai_${language}_${entry.normalized}`,
+        sourceId: globalSourceId,
+        sourceName: globalSourceName,
+        lookupKey: `${language}:${entry.normalized}`,
+        language,
+        generatedByAi: true
+      }));
+
+    if (migratedEntries.length) {
+      await upsertDictionaryEntriesIntoSource(
+        {
+          id: globalSourceId,
+          name: globalSourceName,
+          language,
+          format: 'json',
+          entryCount: migratedEntries.length,
+          createdAt: nowString()
+        },
+        migratedEntries
+      );
+    }
+  }
+
+  for (const source of legacySources) await deleteDictionarySource(source.id);
+}
+
+function nowString(): string {
+  return new Date().toISOString();
 }
 
 export async function getDictionarySources(): Promise<DictionarySourceRecord[]> {

@@ -1,5 +1,5 @@
 import type { AiExplanationRecord, AiProvider, DictionaryEntryRecord, DictionarySourceRecord, PageTextRecord, SourceLanguage } from '../../types';
-import { getByKey, importDictionarySource, put } from '../../storage/db';
+import { getByKey, getGlobalAiDictionarySourceId, getGlobalAiDictionarySourceName, put, upsertDictionaryEntriesIntoSource } from '../../storage/db';
 import { lookupOfflineDictionary } from '../dictionary/dictionaryService';
 import { displayCleanWord, nowIso, normalizeWord, simpleHash, splitIntoSentences, splitSentenceIntoParts } from '../../utils/text';
 
@@ -231,14 +231,14 @@ async function enrichUnknownWordsForPage(params: PretranslateBookParams, page: P
 
   const source: DictionarySourceRecord = {
     id: buildAiDictionarySourceId(params.bookId, params.sourceLanguage),
-    name: `AI dictionary · ${params.bookTitle || params.bookId}`,
+    name: getGlobalAiDictionarySourceName(params.sourceLanguage),
     language: params.sourceLanguage,
     format: 'json',
     entryCount: dictionaryEntries.length,
     createdAt: nowIso()
   };
 
-  await importDictionarySource(source, dictionaryEntries);
+  await upsertDictionaryEntriesIntoSource(source, dictionaryEntries);
   return dictionaryEntries.length;
 }
 
@@ -346,7 +346,7 @@ function buildAiDictionaryEntries({
       id: `dict_${simpleHash([sourceId, normalized].join('|'))}`,
       lookupKey: `${sourceLanguage}:${normalized}`,
       sourceId,
-      sourceName: `AI dictionary · ${bookTitle || bookId}`,
+      sourceName: getGlobalAiDictionarySourceName(sourceLanguage),
       importedAt: now,
       source: original,
       normalized,
@@ -363,8 +363,8 @@ function buildAiDictionaryEntries({
   return result;
 }
 
-function buildAiDictionarySourceId(bookId: string, sourceLanguage: SourceLanguage): string {
-  return `ai-dictionary-${sourceLanguage}-${bookId}`;
+function buildAiDictionarySourceId(_bookId: string, sourceLanguage: SourceLanguage): string {
+  return getGlobalAiDictionarySourceId(sourceLanguage);
 }
 
 function parseTranslationArray(raw: string, expectedCount: number): string[] {
