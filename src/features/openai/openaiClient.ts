@@ -12,6 +12,7 @@ export interface AiRequestParams {
   mode: AiExplanationRecord['mode'];
   inputText: string;
   context?: string;
+  quizQuestionLanguage?: 'ru' | 'source';
   forceRefresh?: boolean;
 }
 
@@ -153,7 +154,7 @@ export function providerName(provider: AiProvider): string {
 }
 
 function buildCacheId(params: AiRequestParams): string {
-  return `ai_${simpleHash([params.bookId, params.sourceLanguage, params.mode, params.inputText, params.context || ''].join('|'))}`;
+  return `ai_${simpleHash([params.bookId, params.sourceLanguage, params.mode, params.inputText, params.context || '', params.quizQuestionLanguage || ''].join('|'))}`;
 }
 
 function buildTranslationCacheId(bookId: string, sourceLanguage: SourceLanguage, sentence: string): string {
@@ -170,15 +171,43 @@ function sourceLanguageLabel(language: SourceLanguage): string {
 
 function buildPrompt(params: AiRequestParams): string {
   const lang = languageName(params.sourceLanguage);
-  const context = params.context ? `\nКонтекст: ${params.context}` : '';
-  const common = `Ты — внимательный преподаватель ${lang} языка для русскоговорящего ученика. Пиши по-русски, ясно и кратко. Не добавляй лишнюю теорию. Если текст неоднозначен, объясни основной вариант и возможную альтернативу.`;
-  if (params.mode === 'translation') return `${common}\n\nПредложение: ${params.inputText}${context}\n\nДай только естественный перевод на русский язык без комментариев.`;
-  if (params.mode === 'word') return `${common}\n\nСлово: ${params.inputText}${context}\n\nДай ответ в таком формате:\n1) Перевод\n2) Часть речи\n3) Как используется в этом контексте\n4) 2 коротких примера с переводом`;
-  if (params.mode === 'sentence') return `${common}\n\nПредложение: ${params.inputText}${context}\n\nДай ответ в таком формате:\n1) Естественный перевод\n2) Дословная структура\n3) Ключевые слова\n4) Что здесь важно для понимания`;
-  if (params.mode === 'grammar') return `${common}\n\nТекст: ${params.inputText}${context}\n\nОбъясни грамматику в таком формате:\n1) Главная конструкция\n2) Почему она используется\n3) Как перевести на русский\n4) Похожий пример`;
-  if (params.mode === 'simplify') return `${common}\n\nТекст: ${params.inputText}${context}\n\nСделай:\n1) Простое объяснение по-русски\n2) Упрощённую версию на исходном языке\n3) 3 трудных слова с переводом`;
-  return `${common}\n\nТекст: ${params.inputText}${context}\n\nСоставь мини-тест для понимания:\n1) 3 вопроса\n2) варианты ответа A/B/C\n3) правильные ответы\n4) краткое объяснение каждого ответа`;
+  const sourceLabel = sourceLanguageLabel(params.sourceLanguage);
+  const context = params.context ? `
+Контекст: ${params.context}` : '';
+  const common = `Ты — внимательный преподаватель ${lang} языка для русскоговорящего ученика. Пиши кратко, без лишней теории. Отвечай только валидным JSON без Markdown.`;
+  if (params.mode === 'translation') return `${common}
+
+Предложение: ${params.inputText}${context}
+
+Дай только естественный перевод на русский язык без комментариев.`;
+  if (params.mode === 'word') return `${common}
+
+Слово: ${params.inputText}${context}
+
+Верни JSON: {"translationRu":"короткий русский перевод"}`;
+  if (params.mode === 'sentence') return `${common}
+
+Предложение: ${params.inputText}${context}
+
+Верни JSON: {"translationRu":"естественный перевод", "mainIdeaRu":"одна короткая подсказка для понимания", "keyWords":[{"word":"важное слово", "meaningRu":"короткий перевод"}]}. Максимум 3 keyWords.`;
+  if (params.mode === 'grammar') return `${common}
+
+Текст: ${params.inputText}${context}
+
+Верни JSON: {"construction":"главная грамматическая конструкция", "meaningRu":"как это понимать по-русски", "example":"один очень короткий похожий пример на ${sourceLabel} с переводом"}`;
+  if (params.mode === 'simplify') return `${common}
+
+Текст: ${params.inputText}${context}
+
+Верни JSON: {"simplified":"упрощённая версия только на ${sourceLabel}", "translationRu":"перевод упрощённой версии на русский"}. Не добавляй объяснения.`;
+  const quizLanguage = params.quizQuestionLanguage === 'source' ? sourceLabel : 'Russian';
+  return `${common}
+
+Текст: ${params.inputText}${context}
+
+Составь 3 карточки для проверки понимания. Вопросы должны быть на ${quizLanguage}. Ответы должны быть короткими. Верни JSON: {"cards":[{"question":"вопрос", "answer":"ответ"}]}`;
 }
+
 
 async function translateSentenceBatch(params: PretranslateBookParams & { sentences: string[] }): Promise<string[]> {
   if (!params.sentences.length) return [];
@@ -274,15 +303,16 @@ function shouldCheckWord(normalized: string): boolean {
 function buildUnknownWordsPrompt(language: SourceLanguage, words: string[], sentences: string[]): string {
   return [
     `You are helping a Russian-speaking learner read a ${sourceLanguageLabel(language)} book.`,
-    'For each unknown word or inflected form, identify the dictionary form and the most likely Russian meaning in context.',
+    'For each unknown word or inflected form, provide only the most likely short Russian translation in context.',
     'Return ONLY a valid JSON array. No Markdown. No comments outside JSON.',
-    'Each item must have this shape:',
-    '[{"word":"original form","lemma":"dictionary form","translationRu":"short Russian translation","grammar":"short grammar note in Russian","partOfSpeech":"noun/verb/adjective/etc. in Russian"}]',
-    'If a word is a contraction or elision, keep the original in "word" and explain the useful dictionary form in "lemma".',
+    'Each item must have this exact shape:',
+    '[{"word":"original form","translationRu":"short Russian translation"}]',
+    'Do not include grammar, lemma, examples, explanations, or part of speech.',
     `Unknown words: ${JSON.stringify(words)}`,
     `Page context: ${JSON.stringify(sentences.slice(0, 18))}`
   ].join('\n');
 }
+
 
 function parseAiWordEntries(raw: string): AiWordEntry[] {
   const jsonCandidate = extractJsonArray(raw.trim());
@@ -352,9 +382,6 @@ function buildAiDictionaryEntries({
       normalized,
       language: sourceLanguage,
       translationsRu,
-      partOfSpeech: aiEntry.partOfSpeech || undefined,
-      lemma: aiEntry.lemma || undefined,
-      grammarRu: aiEntry.grammarRu || aiEntry.grammar || undefined,
       generatedByAi: true,
       aiProvider: provider
     });

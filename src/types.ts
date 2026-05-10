@@ -10,6 +10,7 @@ export interface AppSettings {
   aiModels: Record<AiProvider, string>;
   defaultSourceLanguage: SourceLanguage;
   hasRequestedPersistentStorage: boolean;
+  quizQuestionLanguage: 'ru' | 'source';
   openAiApiKey?: string;
   openAiModel?: string;
 }

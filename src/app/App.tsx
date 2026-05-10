@@ -1,5 +1,4 @@
 import { ChangeEvent, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BottomSheet } from '../components/BottomSheet';
 import { Button } from '../components/Button';
 import { Select } from '../components/Select';
 import { TextInput } from '../components/TextInput';
@@ -150,6 +149,7 @@ export function App() {
   const goToPage = async (page: number) => {
     if (!activeBook) return;
     const bounded = Math.min(Math.max(1, page), activeBook.pageCount);
+    setSelectedWord(null);
     setCurrentPage(bounded);
     await persistProgress(activeBook.id, bounded);
   };
@@ -245,6 +245,10 @@ export function App() {
     if (!activeBook) return;
     const clean = displayCleanWord(word);
     if (!clean) return;
+    if (selectedWord?.word.toLowerCase() === clean.toLowerCase() && selectedWord.sentence === sentence) {
+      setSelectedWord(null);
+      return;
+    }
     setSelectedWord({ word: clean, sentence, dictionaryEntry: null, loading: true, saved: false });
     const dictionaryEntry = await lookupOfflineDictionary(clean, activeBook.sourceLanguage);
     const existing = vocabulary.some((item) => item.word.toLowerCase() === clean.toLowerCase() && item.bookId === activeBook.id);
@@ -293,7 +297,8 @@ export function App() {
         sourceLanguage: activeBook.sourceLanguage,
         mode,
         inputText,
-        context
+        context,
+        quizQuestionLanguage: settings.quizQuestionLanguage
       });
       setAiPanel({ title, mode, inputText, text: response.text, loading: false, cached: response.cached });
     } catch (error) {
@@ -375,7 +380,7 @@ export function App() {
     setMessage(t('dictionaryDeleted'));
   };
 
-  const reviewWords = vocabulary.filter((word) => !word.nextReviewAt || new Date(word.nextReviewAt) <= new Date());
+  const reviewWords = vocabulary.filter((word) => word.status !== 'known');
   const currentFlashcard = reviewWords[flashcardIndex % Math.max(reviewWords.length, 1)];
 
   const reviewFlashcard = async (quality: ReviewQuality) => {
@@ -420,8 +425,10 @@ export function App() {
             currentPage={currentPage}
             pageCount={activeBook?.pageCount || 0}
             sentenceTranslations={sentenceTranslations}
+            selectedWord={selectedWord}
             onPageChange={goToPage}
             onSelectWord={selectWord}
+            onSaveSelectedWord={saveSelectedWord}
             onExplainSentence={(sentence) => runAi('sentence', sentence, t('explainSentence'))}
             onGrammar={(sentence) => runAi('grammar', sentence, t('grammar'))}
             onSimplify={(sentence) => runAi('simplify', sentence, t('simplify'))}
@@ -489,38 +496,11 @@ export function App() {
 
       <input ref={importRef} className="hidden" type="file" accept="application/json" onChange={importBackup} />
 
-      {selectedWord && (
-        <BottomSheet title={selectedWord.word} onClose={() => setSelectedWord(null)} closeLabel={t('close')}>
-          {selectedWord.loading ? (
-            <p>{t('uploadProcessing')}</p>
-          ) : selectedWord.dictionaryEntry ? (
-            <div className="stack">
-              <p className="eyebrow">{t('offlineTranslation')}</p>
-              <h3>{selectedWord.dictionaryEntry.translationsRu.join(', ')}</h3>
-              {selectedWord.dictionaryEntry.lemma && <p><strong>{t('lemma')}:</strong> {selectedWord.dictionaryEntry.lemma}</p>}
-              {selectedWord.dictionaryEntry.partOfSpeech && <p><strong>{t('partOfSpeech')}:</strong> {selectedWord.dictionaryEntry.partOfSpeech}</p>}
-              {selectedWord.dictionaryEntry.grammarRu && <p><strong>{t('grammarNote')}:</strong> {selectedWord.dictionaryEntry.grammarRu}</p>}
-              {selectedWord.dictionaryEntry.generatedByAi && <p className="muted">{t('aiDictionaryEntry')}</p>}
-              <p className="quote">{selectedWord.sentence}</p>
-            </div>
-          ) : (
-            <p>{t('dictionaryNotFound')}</p>
-          )}
-          <div className="action-row">
-            <Button onClick={saveSelectedWord} disabled={selectedWord.saved} variant="primary">
-              {selectedWord.saved ? t('saved') : t('saveWord')}
-            </Button>
-            <Button onClick={() => runAi('word', selectedWord.word, t('explainWithAi'), selectedWord.sentence)}>
-              {t('explainWithAi')}
-            </Button>
-          </div>
-        </BottomSheet>
-      )}
 
       {aiPanel && (
         <AiPopup title={aiPanel.title} onClose={() => setAiPanel(null)} closeLabel={t('close')}>
           <p className="quote">{aiPanel.inputText}</p>
-          {aiPanel.loading ? <p>{t('aiLoading')}</p> : <Markdownish text={aiPanel.text} />}
+          {aiPanel.loading ? <p>{t('aiLoading')}</p> : <AiStructuredContent mode={aiPanel.mode} text={aiPanel.text} t={t} />}
           {aiPanel.cached && <p className="muted">{t('aiCached')}</p>}
         </AiPopup>
       )}
@@ -613,8 +593,10 @@ function ReaderView({
   currentPage,
   pageCount,
   sentenceTranslations,
+  selectedWord,
   onPageChange,
   onSelectWord,
+  onSaveSelectedWord,
   onExplainSentence,
   onGrammar,
   onSimplify,
@@ -626,8 +608,10 @@ function ReaderView({
   currentPage: number;
   pageCount: number;
   sentenceTranslations: Record<string, string>;
+  selectedWord: SelectedWordState | null;
   onPageChange: (page: number) => void;
   onSelectWord: (word: string, sentence: string) => void;
+  onSaveSelectedWord: () => void;
   onExplainSentence: (sentence: string) => void;
   onGrammar: (sentence: string) => void;
   onSimplify: (sentence: string) => void;
@@ -679,6 +663,7 @@ function ReaderView({
           {!sentences.length && <p>{t('noTextOnPage')}</p>}
           {sentences.map((sentence, index) => {
             const isSelected = selectedSentence === sentence;
+            const wordForSentence = selectedWord?.sentence === sentence ? selectedWord : null;
             return (
               <div className="sentence-block" key={`${currentPage}-${index}`}>
                 <p
@@ -703,6 +688,26 @@ function ReaderView({
                     return <span key={partIndex}>{part.value}</span>;
                   })}
                 </p>
+
+                {wordForSentence && (
+                  <div className="sentence-popover word-translation-popover" onClick={(event) => event.stopPropagation()}>
+                    <div className="sentence-translation-box">
+                      <p className="eyebrow">{wordForSentence.word} · {t('offlineTranslation')}</p>
+                      {wordForSentence.loading ? (
+                        <p className="sentence-translation muted">{t('uploadProcessing')}</p>
+                      ) : wordForSentence.dictionaryEntry ? (
+                        <p className="sentence-translation">{wordForSentence.dictionaryEntry.translationsRu.join(', ')}</p>
+                      ) : (
+                        <p className="sentence-translation muted">{t('dictionaryNotFound')}</p>
+                      )}
+                    </div>
+                    <div className="sentence-action-row sentence-action-row-small word-action-row">
+                      <Button className="button-small" variant="primary" onClick={onSaveSelectedWord} disabled={wordForSentence.saved || !wordForSentence.dictionaryEntry}>
+                        {wordForSentence.saved ? t('saved') : t('saveWord')}
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {isSelected && (
                   <div className="sentence-popover" onClick={(event) => event.stopPropagation()}>
@@ -851,6 +856,10 @@ function SettingsView({
         <Select label={t('defaultBookLanguage')} value={draft.defaultSourceLanguage} onChange={(event) => setDraft({ ...draft, defaultSourceLanguage: event.target.value as SourceLanguage })}>
           <option value="fr">{t('french')}</option>
           <option value="en">{t('english')}</option>
+        </Select>
+        <Select label={t('quizQuestionLanguage')} value={draft.quizQuestionLanguage} onChange={(event) => setDraft({ ...draft, quizQuestionLanguage: event.target.value as AppSettings['quizQuestionLanguage'] })}>
+          <option value="ru">{t('quizLanguageRussian')}</option>
+          <option value="source">{t('quizLanguageSource')}</option>
         </Select>
         <Button variant="primary" onClick={() => onSave(draft)}>{t('saveSettings')}</Button>
       </section>
@@ -1005,7 +1014,123 @@ function AiPopup({ title, onClose, closeLabel, children }: { title: string; onCl
   );
 }
 
-function Markdownish({ text }: { text: string }) {
+function AiStructuredContent({ mode, text, t }: { mode: AiExplanationRecord['mode']; text: string; t: (key: string) => string }) {
+  const parsed = parseJsonObject(text);
+  if (!parsed) return <FallbackAiText text={text} />;
+
+  if (mode === 'simplify') {
+    return (
+      <div className="ai-card-grid">
+        <section className="ai-result-card ai-result-primary">
+          <p className="eyebrow">{t('simplifiedVersion')}</p>
+          <p>{readString(parsed.simplified) || text}</p>
+        </section>
+        <section className="ai-result-card">
+          <p className="eyebrow">{t('cachedTranslation')}</p>
+          <p>{readString(parsed.translationRu)}</p>
+        </section>
+      </div>
+    );
+  }
+
+  if (mode === 'quiz') {
+    const cards = Array.isArray(parsed.cards) ? parsed.cards : [];
+    return <QuizCards cards={cards} t={t} fallback={text} />;
+  }
+
+  if (mode === 'grammar') {
+    return (
+      <div className="ai-card-grid">
+        <section className="ai-result-card ai-result-primary">
+          <p className="eyebrow">{t('grammarFocus')}</p>
+          <p>{readString(parsed.construction)}</p>
+        </section>
+        <section className="ai-result-card">
+          <p className="eyebrow">{t('meaning')}</p>
+          <p>{readString(parsed.meaningRu)}</p>
+        </section>
+        {readString(parsed.example) && (
+          <section className="ai-result-card">
+            <p className="eyebrow">{t('example')}</p>
+            <p>{readString(parsed.example)}</p>
+          </section>
+        )}
+      </div>
+    );
+  }
+
+  if (mode === 'sentence') {
+    const keywords = Array.isArray(parsed.keyWords) ? parsed.keyWords.slice(0, 3) : [];
+    return (
+      <div className="ai-card-grid">
+        <section className="ai-result-card ai-result-primary">
+          <p className="eyebrow">{t('cachedTranslation')}</p>
+          <p>{readString(parsed.translationRu)}</p>
+        </section>
+        <section className="ai-result-card">
+          <p className="eyebrow">{t('mainPoint')}</p>
+          <p>{readString(parsed.mainIdeaRu)}</p>
+        </section>
+        {!!keywords.length && (
+          <section className="ai-result-card">
+            <p className="eyebrow">{t('keyWords')}</p>
+            <div className="keyword-chips">
+              {keywords.map((item: any, index: number) => (
+                <span className="keyword-chip" key={index}>
+                  <strong>{readString(item.word)}</strong> {readString(item.meaningRu)}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    );
+  }
+
+  if (mode === 'word') {
+    return (
+      <div className="ai-card-grid">
+        <section className="ai-result-card ai-result-primary">
+          <p className="eyebrow">{t('offlineTranslation')}</p>
+          <p>{readString(parsed.translationRu)}</p>
+        </section>
+      </div>
+    );
+  }
+
+  return <FallbackAiText text={text} />;
+}
+
+function QuizCards({ cards, t, fallback }: { cards: any[]; t: (key: string) => string; fallback: string }) {
+  const [openIndexes, setOpenIndexes] = useState<Set<number>>(new Set());
+  if (!cards.length) return <FallbackAiText text={fallback} />;
+
+  const toggle = (index: number) => {
+    setOpenIndexes((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
+  return (
+    <div className="quiz-card-grid">
+      {cards.map((card, index) => {
+        const isOpen = openIndexes.has(index);
+        return (
+          <button className={`quiz-card ${isOpen ? 'quiz-card-open' : ''}`} key={index} onClick={() => toggle(index)} type="button">
+            <span className="eyebrow">{isOpen ? t('answer') : t('question')} {index + 1}</span>
+            <strong>{isOpen ? readString(card.answer) : readString(card.question)}</strong>
+            <small>{isOpen ? t('tapForQuestion') : t('tapForAnswer')}</small>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function FallbackAiText({ text }: { text: string }) {
   return (
     <div className="ai-text">
       {text.split('\n').filter(Boolean).map((line, index) => (
@@ -1013,4 +1138,28 @@ function Markdownish({ text }: { text: string }) {
       ))}
     </div>
   );
+}
+
+function parseJsonObject(text: string): any | null {
+  const trimmed = text.trim().replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    const start = trimmed.indexOf('{');
+    const end = trimmed.lastIndexOf('}');
+    if (start >= 0 && end > start) {
+      try {
+        return JSON.parse(trimmed.slice(start, end + 1));
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+}
+
+function readString(value: unknown): string {
+  if (typeof value === 'string') return value.trim();
+  if (value === undefined || value === null) return '';
+  return String(value).trim();
 }

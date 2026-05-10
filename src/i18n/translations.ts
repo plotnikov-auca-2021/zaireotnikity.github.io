@@ -114,7 +114,20 @@ export const translations: Record<UiLanguage, Record<string, string>> = {
     lemma: 'Начальная форма',
     partOfSpeech: 'Часть речи',
     grammarNote: 'Грамматика',
-    aiDictionaryEntry: 'Найдено через AI и сохранено для офлайн-доступа.'
+    aiDictionaryEntry: 'Найдено через AI и сохранено для офлайн-доступа.',
+    quizQuestionLanguage: 'Язык вопросов в тестах',
+    quizLanguageRussian: 'Русский',
+    quizLanguageSource: 'Язык книги',
+    simplifiedVersion: 'Упрощённая версия',
+    grammarFocus: 'Главная конструкция',
+    meaning: 'Как понимать',
+    example: 'Пример',
+    mainPoint: 'Главная подсказка',
+    keyWords: 'Ключевые слова',
+    question: 'Вопрос',
+    answer: 'Ответ',
+    tapForQuestion: 'Нажмите, чтобы увидеть вопрос',
+    tapForAnswer: 'Нажмите, чтобы увидеть ответ'
   },
   en: {
     appTitle: 'Reader',
@@ -229,7 +242,20 @@ export const translations: Record<UiLanguage, Record<string, string>> = {
     lemma: 'Dictionary form',
     partOfSpeech: 'Part of speech',
     grammarNote: 'Grammar',
-    aiDictionaryEntry: 'Found with AI and saved for offline use.'
+    aiDictionaryEntry: 'Found with AI and saved for offline use.',
+    quizQuestionLanguage: 'Quiz question language',
+    quizLanguageRussian: 'Russian',
+    quizLanguageSource: 'Book language',
+    simplifiedVersion: 'Simplified version',
+    grammarFocus: 'Main structure',
+    meaning: 'Meaning',
+    example: 'Example',
+    mainPoint: 'Main hint',
+    keyWords: 'Key words',
+    question: 'Question',
+    answer: 'Answer',
+    tapForQuestion: 'Tap to see question',
+    tapForAnswer: 'Tap to see answer'
   },
   fr: {
     appTitle: 'Lecteur',
@@ -344,7 +370,20 @@ export const translations: Record<UiLanguage, Record<string, string>> = {
     lemma: 'Forme de base',
     partOfSpeech: 'Partie du discours',
     grammarNote: 'Grammaire',
-    aiDictionaryEntry: 'Trouvé avec AI et enregistré pour une utilisation hors ligne.'
+    aiDictionaryEntry: 'Trouvé avec AI et enregistré pour une utilisation hors ligne.',
+    quizQuestionLanguage: 'Langue des questions du quiz',
+    quizLanguageRussian: 'Russe',
+    quizLanguageSource: 'Langue du livre',
+    simplifiedVersion: 'Version simplifiée',
+    grammarFocus: 'Structure principale',
+    meaning: 'Sens',
+    example: 'Exemple',
+    mainPoint: 'Indice principal',
+    keyWords: 'Mots clés',
+    question: 'Question',
+    answer: 'Réponse',
+    tapForQuestion: 'Touchez pour voir la question',
+    tapForAnswer: 'Touchez pour voir la réponse'
   }
 };
 

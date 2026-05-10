@@ -20,7 +20,7 @@ export function scheduleReview(word: VocabularyRecord, quality: ReviewQuality): 
   } else {
     next.intervalDays = Math.max(4, Math.round(word.intervalDays * (word.ease + 0.4)));
     next.ease = word.ease + 0.15;
-    next.status = 'known';
+    next.status = 'learning';
   }
 
   const due = new Date(today.getTime() + next.intervalDays * 24 * 60 * 60 * 1000);

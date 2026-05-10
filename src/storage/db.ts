@@ -30,7 +30,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   aiApiKeys: { openai: '', gemini: '', groq: '', openrouter: '', mistral: '' },
   aiModels: DEFAULT_AI_MODELS,
   defaultSourceLanguage: 'fr',
-  hasRequestedPersistentStorage: false
+  hasRequestedPersistentStorage: false,
+  quizQuestionLanguage: 'ru'
 };
 
 export function getGlobalAiDictionarySourceId(language: SourceLanguage): string {
@@ -160,8 +161,9 @@ export function normalizeSettings(raw: Partial<AppSettings>): AppSettings {
   if (raw.openAiModel && (!raw.aiModels || !raw.aiModels.openai)) aiModels.openai = raw.openAiModel;
 
   const aiProvider = AI_PROVIDERS.includes(merged.aiProvider) ? merged.aiProvider : DEFAULT_SETTINGS.aiProvider;
+  const quizQuestionLanguage = merged.quizQuestionLanguage === 'source' ? 'source' : 'ru';
 
-  return { ...merged, aiProvider, aiApiKeys, aiModels, openAiApiKey: undefined, openAiModel: undefined };
+  return { ...merged, aiProvider, aiApiKeys, aiModels, quizQuestionLanguage, openAiApiKey: undefined, openAiModel: undefined };
 }
 
 export async function saveSettings(settings: AppSettings): Promise<void> {
