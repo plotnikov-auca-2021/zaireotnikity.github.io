@@ -428,6 +428,7 @@ export function App() {
             selectedWord={selectedWord}
             onPageChange={goToPage}
             onSelectWord={selectWord}
+            onClearSelectedWord={() => setSelectedWord(null)}
             onSaveSelectedWord={saveSelectedWord}
             onExplainSentence={(sentence) => runAi('sentence', sentence, t('explainSentence'))}
             onGrammar={(sentence) => runAi('grammar', sentence, t('grammar'))}
@@ -596,6 +597,7 @@ function ReaderView({
   selectedWord,
   onPageChange,
   onSelectWord,
+  onClearSelectedWord,
   onSaveSelectedWord,
   onExplainSentence,
   onGrammar,
@@ -611,6 +613,7 @@ function ReaderView({
   selectedWord: SelectedWordState | null;
   onPageChange: (page: number) => void;
   onSelectWord: (word: string, sentence: string) => void;
+  onClearSelectedWord: () => void;
   onSaveSelectedWord: () => void;
   onExplainSentence: (sentence: string) => void;
   onGrammar: (sentence: string) => void;
@@ -668,7 +671,10 @@ function ReaderView({
               <div className="sentence-block" key={`${currentPage}-${index}`}>
                 <p
                   className={`sentence ${isSelected ? 'selected-sentence' : ''}`}
-                  onClick={() => setSelectedSentence(isSelected ? '' : sentence)}
+                  onClick={() => {
+                    onClearSelectedWord();
+                    setSelectedSentence(isSelected ? '' : sentence);
+                  }}
                 >
                   {splitSentenceIntoParts(sentence).map((part, partIndex) => {
                     if (part.type === 'word') {
