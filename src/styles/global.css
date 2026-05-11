@@ -740,7 +740,7 @@ body {
 }
 
 .sentence-action-row-small {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
 }
 
@@ -754,7 +754,7 @@ body {
 
 @media (max-width: 620px) {
   .sentence-action-row-small {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .sentence-action-row-small .button-small {
@@ -776,7 +776,20 @@ body {
 }
 
 .word-action-row {
-  grid-template-columns: minmax(96px, 160px);
+  grid-template-columns: repeat(2, minmax(96px, 160px));
+}
+
+.listen-button {
+  font-size: 15px;
+  background: linear-gradient(135deg, #f3e7d4 0%, #ead5b8 100%);
+}
+
+.word-action-row .listen-button {
+  min-width: 48px;
+}
+
+.word-action-row .button-primary {
+  min-width: 120px;
 }
 
 .ai-card-grid {

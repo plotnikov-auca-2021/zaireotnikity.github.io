@@ -509,6 +509,29 @@ export function App() {
   );
 }
 
+
+function speakOriginalText(text: string, language: SourceLanguage) {
+  if (!text.trim() || typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    return;
+  }
+
+  const langCode = language === 'fr' ? 'fr-FR' : 'en-US';
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = langCode;
+  utterance.rate = 1;
+  utterance.pitch = 1;
+  utterance.volume = 1;
+
+  const voices = window.speechSynthesis.getVoices();
+  const matchingVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith(language));
+  if (matchingVoice) {
+    utterance.voice = matchingVoice;
+  }
+
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utterance);
+}
+
 function titleForView(view: ViewName, t: (key: string) => string): string {
   const map: Record<ViewName, string> = {
     library: t('libraryTitle'),
@@ -709,6 +732,9 @@ function ReaderView({
                       )}
                     </div>
                     <div className="sentence-action-row sentence-action-row-small word-action-row">
+                      <Button className="button-small listen-button" onClick={() => speakOriginalText(wordForSentence.word, book.sourceLanguage)} aria-label={t('listenOriginal')} title={t('listenOriginal')}>
+                        🔊
+                      </Button>
                       <Button className="button-small" variant="primary" onClick={onSaveSelectedWord} disabled={wordForSentence.saved || !wordForSentence.dictionaryEntry}>
                         {wordForSentence.saved ? t('saved') : t('saveWord')}
                       </Button>
@@ -725,6 +751,9 @@ function ReaderView({
                       </p>
                     </div>
                     <div className="sentence-action-row sentence-action-row-small">
+                      <Button className="button-small listen-button" onClick={() => speakOriginalText(sentence, book.sourceLanguage)} aria-label={t('listenOriginal')} title={t('listenOriginal')}>
+                        🔊
+                      </Button>
                       <Button className="button-small" variant="primary" onClick={() => onExplainSentence(sentence)}>{t('explainShort')}</Button>
                       <Button className="button-small" onClick={() => onGrammar(sentence)}>{t('grammarShort')}</Button>
                       <Button className="button-small" onClick={() => onSimplify(sentence)}>{t('simplifyShort')}</Button>

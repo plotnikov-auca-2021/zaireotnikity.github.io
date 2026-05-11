@@ -127,7 +127,8 @@ export const translations: Record<UiLanguage, Record<string, string>> = {
     question: 'Вопрос',
     answer: 'Ответ',
     tapForQuestion: 'Нажмите, чтобы увидеть вопрос',
-    tapForAnswer: 'Нажмите, чтобы увидеть ответ'
+    tapForAnswer: 'Нажмите, чтобы увидеть ответ',
+    listenOriginal: 'Слушать'
   },
   en: {
     appTitle: 'Reader',
@@ -255,7 +256,8 @@ export const translations: Record<UiLanguage, Record<string, string>> = {
     question: 'Question',
     answer: 'Answer',
     tapForQuestion: 'Tap to see question',
-    tapForAnswer: 'Tap to see answer'
+    tapForAnswer: 'Tap to see answer',
+    listenOriginal: 'Listen'
   },
   fr: {
     appTitle: 'Lecteur',
@@ -383,7 +385,8 @@ export const translations: Record<UiLanguage, Record<string, string>> = {
     question: 'Question',
     answer: 'Réponse',
     tapForQuestion: 'Touchez pour voir la question',
-    tapForAnswer: 'Touchez pour voir la réponse'
+    tapForAnswer: 'Touchez pour voir la réponse',
+    listenOriginal: 'Écouter'
   }
 };
 
