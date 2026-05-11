@@ -863,3 +863,29 @@ body {
   color: var(--muted);
   font-weight: 700;
 }
+
+/* TTS controls in saved words and review cards */
+.word-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.word-title-row h3 {
+  margin-bottom: 0;
+}
+
+.word-listen-button {
+  min-width: 42px;
+  min-height: 32px;
+}
+
+.flashcard-answer-content {
+  align-items: center;
+}
+
+.flashcard-listen-button {
+  align-self: center;
+  padding-inline: 12px;
+}

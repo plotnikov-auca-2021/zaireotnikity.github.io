@@ -788,7 +788,17 @@ function VocabularyView({
       {words.map((word) => (
         <article className="card word-card" key={word.id}>
           <div>
-            <h3>{word.word}</h3>
+            <div className="word-title-row">
+              <h3>{word.word}</h3>
+              <Button
+                className="button-small listen-button word-listen-button"
+                onClick={() => speakOriginalText(word.word, word.sourceLanguage)}
+                aria-label={t('listenOriginal')}
+                title={t('listenOriginal')}
+              >
+                🔊
+              </Button>
+            </div>
             <p>{word.translationRu || '—'}</p>
             {word.exampleSentence && <p className="quote">{word.exampleSentence}</p>}
             <span className="pill">{statusLabel(word.status, t)}</span>
@@ -830,7 +840,15 @@ function FlashcardsView({
         <p className="eyebrow">{word.sourceLanguage.toUpperCase()} → RU</p>
         <h2>{word.word}</h2>
         {answerVisible ? (
-          <div className="stack">
+          <div className="stack flashcard-answer-content">
+            <Button
+              className="button-small listen-button flashcard-listen-button"
+              onClick={() => speakOriginalText(word.word, word.sourceLanguage)}
+              aria-label={t('listenOriginal')}
+              title={t('listenOriginal')}
+            >
+              🔊 {t('listenOriginal')}
+            </Button>
             <h3>{word.translationRu || '—'}</h3>
             {word.exampleSentence && <p className="quote">{word.exampleSentence}</p>}
           </div>
