@@ -684,6 +684,7 @@ function ReaderView({
                           className="word-button"
                           onClick={(event) => {
                             event.stopPropagation();
+                            setSelectedSentence('');
                             onSelectWord(part.value, sentence);
                           }}
                         >
