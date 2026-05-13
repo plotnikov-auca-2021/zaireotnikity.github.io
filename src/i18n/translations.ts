@@ -128,7 +128,20 @@ export const translations: Record<UiLanguage, Record<string, string>> = {
     answer: 'Ответ',
     tapForQuestion: 'Нажмите, чтобы увидеть вопрос',
     tapForAnswer: 'Нажмите, чтобы увидеть ответ',
-    listenOriginal: 'Слушать'
+    listenOriginal: 'Слушать',
+    preparedLibraryTitle: 'Готовые книги',
+    preparedLibraryHelp: 'Книги с заранее подготовленным текстом, переводом и словарём. Скачайте один раз — дальше они доступны локально.',
+    refreshPrepared: 'Обновить',
+    preparedLoading: 'Проверяю каталог готовых книг…',
+    preparedEmpty: 'Готовых книг пока нет. Добавьте файлы в public/books/catalog.json.',
+    downloadPrepared: 'Скачать',
+    preparedImporting: 'Импортирую готовую книгу…',
+    preparedImportingShort: 'Скачиваю…',
+    preparedImportDone: 'Готовая книга добавлена',
+    preparedImportFailed: 'Не удалось импортировать готовую книгу',
+    preparedTranslations: 'переводов',
+    preparedDictionaryEntries: 'словарных статей',
+    localLibraryTitle: 'Книги на устройстве'
   },
   en: {
     appTitle: 'Reader',
@@ -257,7 +270,20 @@ export const translations: Record<UiLanguage, Record<string, string>> = {
     answer: 'Answer',
     tapForQuestion: 'Tap to see question',
     tapForAnswer: 'Tap to see answer',
-    listenOriginal: 'Listen'
+    listenOriginal: 'Listen',
+    preparedLibraryTitle: 'Prepared books',
+    preparedLibraryHelp: 'Books with pre-generated text, translations and dictionary entries. Download once, then read locally.',
+    refreshPrepared: 'Refresh',
+    preparedLoading: 'Checking prepared books catalog…',
+    preparedEmpty: 'No prepared books yet. Add files to public/books/catalog.json.',
+    downloadPrepared: 'Download',
+    preparedImporting: 'Importing prepared book…',
+    preparedImportingShort: 'Downloading…',
+    preparedImportDone: 'Prepared book added',
+    preparedImportFailed: 'Could not import prepared book',
+    preparedTranslations: 'translations',
+    preparedDictionaryEntries: 'dictionary entries',
+    localLibraryTitle: 'Books on this device'
   },
   fr: {
     appTitle: 'Lecteur',
@@ -386,7 +412,20 @@ export const translations: Record<UiLanguage, Record<string, string>> = {
     answer: 'Réponse',
     tapForQuestion: 'Touchez pour voir la question',
     tapForAnswer: 'Touchez pour voir la réponse',
-    listenOriginal: 'Écouter'
+    listenOriginal: 'Écouter',
+    preparedLibraryTitle: 'Livres préparés',
+    preparedLibraryHelp: 'Livres avec texte, traductions et dictionnaire déjà préparés. Téléchargez une fois, puis lisez localement.',
+    refreshPrepared: 'Actualiser',
+    preparedLoading: 'Vérification du catalogue de livres préparés…',
+    preparedEmpty: 'Aucun livre préparé pour le moment. Ajoutez les fichiers dans public/books/catalog.json.',
+    downloadPrepared: 'Télécharger',
+    preparedImporting: 'Importation du livre préparé…',
+    preparedImportingShort: 'Téléchargement…',
+    preparedImportDone: 'Livre préparé ajouté',
+    preparedImportFailed: 'Impossible d’importer le livre préparé',
+    preparedTranslations: 'traductions',
+    preparedDictionaryEntries: 'entrées de dictionnaire',
+    localLibraryTitle: 'Livres sur cet appareil'
   }
 };
 

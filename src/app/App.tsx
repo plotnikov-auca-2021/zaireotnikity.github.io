@@ -7,6 +7,7 @@ import { parseDictionaryFile } from '../features/dictionary/importDictionary';
 import { scheduleReview, type ReviewQuality } from '../features/flashcards/spacedRepetition';
 import { getAiExplanation, checkAiApi, pretranslateBook, providerName } from '../features/openai/openaiClient';
 import { extractPdfBook } from '../features/pdf/pdfService';
+import { fetchPreparedCatalog, importPreparedBook, type PreparedBookCatalogItem } from '../features/preparedBooks/preparedBooksService';
 import { makeTranslator } from '../i18n/translations';
 import {
   AI_PROVIDERS,
@@ -65,6 +66,9 @@ export function App() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [view, setView] = useState<ViewName>('library');
   const [books, setBooks] = useState<BookRecord[]>([]);
+  const [preparedBooks, setPreparedBooks] = useState<PreparedBookCatalogItem[]>([]);
+  const [preparedCatalogChecked, setPreparedCatalogChecked] = useState(false);
+  const [preparedImportingId, setPreparedImportingId] = useState<string>('');
   const [activeBookId, setActiveBookId] = useState<string>('');
   const [pages, setPages] = useState<PageTextRecord[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -82,6 +86,14 @@ export function App() {
   const t = useMemo(() => makeTranslator(settings.uiLanguage), [settings.uiLanguage]);
   const activeBook = books.find((book) => book.id === activeBookId) || null;
   const activePage = pages.find((page) => page.pageNumber === currentPage) || null;
+  const localBookIds = useMemo(() => new Set(books.map((book) => book.id)), [books]);
+
+  const loadPreparedCatalog = useCallback(async () => {
+    setPreparedCatalogChecked(false);
+    const items = await fetchPreparedCatalog();
+    setPreparedBooks(items);
+    setPreparedCatalogChecked(true);
+  }, []);
 
   const refreshSentenceTranslations = useCallback(async (bookId: string) => {
     const aiItems = await getAll('aiCache');
@@ -118,7 +130,8 @@ export function App() {
 
   useEffect(() => {
     void loadInitial();
-  }, [loadInitial]);
+    void loadPreparedCatalog();
+  }, [loadInitial, loadPreparedCatalog]);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -219,6 +232,33 @@ export function App() {
     } finally {
       setBusy('');
       event.target.value = '';
+    }
+  };
+
+
+  const handleImportPreparedBook = async (item: PreparedBookCatalogItem) => {
+    setPreparedImportingId(item.id);
+    setBusy(t('preparedImporting'));
+    setMessage('');
+    try {
+      const result = await importPreparedBook(item);
+      const nextBooks = (await getAll('books')).sort((a, b) => b.lastOpenedAt.localeCompare(a.lastOpenedAt));
+      const importedBook = nextBooks.find((book) => book.id === result.bookId);
+      if (importedBook) {
+        setBooks(nextBooks);
+        setActiveBookId(importedBook.id);
+        setPages(await getPagesByBook(importedBook.id));
+        await refreshSentenceTranslations(importedBook.id);
+        setCurrentPage((await getByKey('progress', importedBook.id))?.currentPage || 1);
+        setView('reader');
+      }
+      setDictionarySources(await getDictionarySources());
+      setMessage(`${t('preparedImportDone')}: ${result.title} · ${result.pageCount} ${t('page').toLowerCase()} · ${result.translations} ${t('preparedTranslations').toLowerCase()} · ${result.dictionaryEntries} ${t('preparedDictionaryEntries').toLowerCase()}`);
+    } catch (error) {
+      setMessage(`${t('preparedImportFailed')}: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setBusy('');
+      setPreparedImportingId('');
     }
   };
 
@@ -411,9 +451,15 @@ export function App() {
             t={t}
             settings={settings}
             books={books}
+            preparedBooks={preparedBooks}
+            preparedCatalogChecked={preparedCatalogChecked}
+            preparedImportingId={preparedImportingId}
+            localBookIds={localBookIds}
             onUpload={uploadPdf}
             onOpen={openBook}
             onDelete={handleDeleteBook}
+            onImportPrepared={handleImportPreparedBook}
+            onRefreshPrepared={loadPreparedCatalog}
           />
         )}
 
@@ -567,16 +613,28 @@ function LibraryView({
   t,
   settings,
   books,
+  preparedBooks,
+  preparedCatalogChecked,
+  preparedImportingId,
+  localBookIds,
   onUpload,
   onOpen,
-  onDelete
+  onDelete,
+  onImportPrepared,
+  onRefreshPrepared
 }: {
   t: (key: string) => string;
   settings: AppSettings;
   books: BookRecord[];
+  preparedBooks: PreparedBookCatalogItem[];
+  preparedCatalogChecked: boolean;
+  preparedImportingId: string;
+  localBookIds: Set<string>;
   onUpload: (event: ChangeEvent<HTMLInputElement>) => void;
   onOpen: (bookId: string) => void;
   onDelete: (bookId: string) => void;
+  onImportPrepared: (item: PreparedBookCatalogItem) => void;
+  onRefreshPrepared: () => void;
 }) {
   return (
     <div className="stack">
@@ -590,6 +648,53 @@ function LibraryView({
         <p className="muted">{t('sourceLanguage')}: {settings.defaultSourceLanguage === 'fr' ? t('french') : t('english')}</p>
       </div>
 
+      <section className="card prepared-library-card">
+        <div className="section-title-row">
+          <div>
+            <h2>{t('preparedLibraryTitle')}</h2>
+            <p className="muted">{t('preparedLibraryHelp')}</p>
+          </div>
+          <Button className="button-small" onClick={onRefreshPrepared}>{t('refreshPrepared')}</Button>
+        </div>
+
+        {!preparedCatalogChecked && <p className="muted">{t('preparedLoading')}</p>}
+        {preparedCatalogChecked && !preparedBooks.length && <p className="muted">{t('preparedEmpty')}</p>}
+
+        {!!preparedBooks.length && (
+          <div className="prepared-book-list">
+            {preparedBooks.map((item) => {
+              const isLocal = localBookIds.has(item.id);
+              const isImporting = preparedImportingId === item.id;
+              return (
+                <article className="prepared-book-row" key={item.id}>
+                  <div>
+                    <h3>{item.title}</h3>
+                    <p className="muted">
+                      {[item.author, item.sourceLanguage === 'fr' ? t('french') : t('english'), item.level, item.pageCount ? `${item.pageCount} ${t('page').toLowerCase()}` : '']
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </p>
+                    {item.description && <p>{item.description}</p>}
+                  </div>
+                  <div className="action-row">
+                    {isLocal ? (
+                      <Button variant="primary" onClick={() => onOpen(item.id)}>{t('openBook')}</Button>
+                    ) : (
+                      <Button variant="primary" onClick={() => onImportPrepared(item)} disabled={isImporting}>
+                        {isImporting ? t('preparedImportingShort') : t('downloadPrepared')}
+                      </Button>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <div className="section-title-row">
+        <h2>{t('localLibraryTitle')}</h2>
+      </div>
       {!books.length && <p className="muted">{t('emptyLibrary')}</p>}
 
       <div className="book-grid">

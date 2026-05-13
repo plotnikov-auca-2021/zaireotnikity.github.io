@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ewa-reader-shell-v2';
+const CACHE_NAME = 'ewa-reader-shell-v15';
 const SCOPE_URL = new URL(self.registration.scope);
 const SHELL_URLS = [
   new URL('./', SCOPE_URL).toString(),
@@ -20,6 +20,22 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const requestUrl = new URL(event.request.url);
   if (requestUrl.origin !== self.location.origin) return;
+
+  const relativePath = requestUrl.pathname.replace(SCOPE_URL.pathname, '');
+  const isPreparedBookAsset = relativePath.startsWith('books/');
+
+  if (isPreparedBookAsset) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cached) => {
