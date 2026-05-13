@@ -7,7 +7,7 @@ import { parseDictionaryFile } from '../features/dictionary/importDictionary';
 import { scheduleReview, type ReviewQuality } from '../features/flashcards/spacedRepetition';
 import { getAiExplanation, checkAiApi, pretranslateBook, providerName } from '../features/openai/openaiClient';
 import { extractPdfBook } from '../features/pdf/pdfService';
-import { fetchPreparedCatalog, importPreparedBook, type PreparedBookCatalogItem } from '../features/preparedBooks/preparedBooksService';
+import { fetchPreparedCatalog, importPreparedBook, type PreparedBookCatalogItem } from '../features/preparedBooksService';
 import { makeTranslator } from '../i18n/translations';
 import {
   AI_PROVIDERS,
