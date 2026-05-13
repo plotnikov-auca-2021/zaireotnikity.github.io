@@ -5,9 +5,9 @@ import type {
   DictionarySourceRecord,
   PageTextRecord,
   SourceLanguage
-} from '../../types';
-import { getByKey, importDictionarySource, put } from '../../storage/db';
-import { generateId, normalizeWord, splitIntoSentences } from '../../utils/text';
+} from '../types';
+import { getByKey, importDictionarySource, put } from '../storage/db';
+import { generateId, normalizeWord, splitIntoSentences } from '../utils/text';
 
 export interface PreparedBookCatalogItem {
   id: string;
@@ -203,7 +203,7 @@ function normalizePreparedPages(bookJson: PreparedBookJson, item: PreparedBookCa
     const pageNumber = Number(rawPage.pageNumber) || pageIndex + 1;
     const rawSentences = Array.isArray(rawPage.sentences) ? rawPage.sentences : [];
     const sentences: PreparedSentence[] = rawSentences
-      .map((sentence, sentenceIndex) => {
+      .map((sentence: string | { id?: string; text?: string }, sentenceIndex: number) => {
         if (typeof sentence === 'string') {
           return { id: `p${pageNumber}-s${sentenceIndex + 1}`, text: sentence.trim() };
         }
@@ -213,7 +213,7 @@ function normalizePreparedPages(bookJson: PreparedBookJson, item: PreparedBookCa
       .filter((sentence) => sentence.text);
 
     if (!sentences.length && rawPage.text) {
-      splitIntoSentences(String(rawPage.text)).forEach((sentence, sentenceIndex) => {
+      splitIntoSentences(String(rawPage.text)).forEach((sentence: string, sentenceIndex: number) => {
         sentences.push({ id: `p${pageNumber}-s${sentenceIndex + 1}`, text: sentence });
       });
     }
